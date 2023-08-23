@@ -1,0 +1,78 @@
+name: NalaDelivery
+description: A new Flutter project.
+
+# Prevent accidental publishing to pub.dev.
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.6 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  socket_io_client: ^2.0.3+1
+  flutter_screenutil: ^5.7.0
+  window_manager: ^0.2.7
+  get: ^4.6.5
+  dio: ^5.1.2
+  flutter_dotenv: ^5.0.2
+  mime: ^1.0.4
+  path_provider: ^2.0.11
+  shared_preferences: ^2.1.2
+  internet_connection_checker: ^1.0.0+1
+  rounded_loading_button: ^2.0.8
+  shimmer: ^2.0.0
+  google_maps_flutter: ^2.2.6
+  form_validator: ">=0.1.1 <2.0.0"
+  flutter_native_splash: ^2.3.0
+  flutter_svg: ^2.0.7
+  flex_color_scheme: ^7.1.2
+  package_info_plus: ^4.0.2
+  permission_handler: ^10.4.3
+  awesome_notifications: ^0.7.4+1
+  cached_network_image: ^3.2.3
+  uuid: ^3.0.6
+  timeago: ^3.3.0
+  url_launcher: ^6.1.11
+  flutter_background_service: ^5.0.1
+  flutter_background_service_android: ^6.0.1
+  image_picker: ^1.0.2
+  babstrap_settings_screen: ^0.1.5+1
+  geolocator: ^10.0.0
+  
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true00000000
+  image_path: "assets/images/logo_light.png"
+  min_sdk_android: 21 # android min sdk min:16, default 21
+  web:
+    generate: true
+    image_path: "assets/images/logo_light.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
+  windows:
+    generate: true
+    image_path: "assets/images/logo_light.png"
+    icon_size: 48 # min:48, max:256, default: 48
+  macos:
+    generate: true
+    image_path: "assets/images/logo_light.png"
+
+flutter:
+  uses-material-design: true
+
+  # Enable generation of localized Strings from arb files.
+  generate: true
+
+  assets:
+    # Add assets from the images directory to the application.
+    - assets/images/
+    - .env
