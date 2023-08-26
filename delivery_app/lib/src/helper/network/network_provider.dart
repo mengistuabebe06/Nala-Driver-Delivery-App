@@ -10,8 +10,6 @@ import 'auth.dart';
 import 'network_service_provider.dart';
 
 class NetworkHandler {
-// Make your HTTP requests as usual with Dio
-
   static Future<String> downloadImage(
       {required String url, required String fileName}) async {
     final appStore = await getApplicationDocumentsDirectory();

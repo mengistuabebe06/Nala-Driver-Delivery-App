@@ -7,8 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io_client;
-
-import '../helper/network/network_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../helper/storage/secure_store.dart';
 import 'profile_controller.dart';
 
@@ -19,26 +18,26 @@ class HomeController extends GetxController {
   List deliveries = [];
   final Set<Marker> markers = {};
   final Set<Polyline> polylines = {};
-  final Completer<GoogleMapController> t_controller =
+  final Completer<GoogleMapController> tController =
       Completer<GoogleMapController>();
 
   CameraPosition pos =
-      CameraPosition(target: LatLng(38, 9), zoom: 19.151926040649414);
+      const CameraPosition(target: LatLng(38, 9), zoom: 19.151926040649414);
 
   Future<void> _goToTheLake(var position) async {
-    final GoogleMapController controller = await t_controller.future;
+    final GoogleMapController controller = await tController.future;
     await controller.animateCamera(CameraUpdate.newCameraPosition(position));
   }
 
   @override
-  onInit() {
-    getCurrentLocation().then((value) {
+  onInit() async {
+    await getCurrentLocation().then((value) {
       lat = value.latitude;
       long = value.longitude;
       update();
 
       CameraPosition newPosition =
-          CameraPosition(target: LatLng(lat, long), zoom: 19.151926040649414);
+          CameraPosition(target: LatLng(lat, long), zoom: 18.151926040649414);
 
       markers.add(
         Marker(
@@ -75,8 +74,8 @@ class HomeController extends GetxController {
   void checkFunction() async {
     await SecuredStorage.read(key: SharedKeys.user)
         .then((value) => user = User.fromJson(jsonDecode(value!)));
-
-    io_client.Socket socket = io_client.io('http://192.168.249.240:5000',
+    final String url = dotenv.get("Base-Url", fallback: "");
+    io_client.Socket socket = io_client.io(url.substring(0, 25),
         io_client.OptionBuilder().setTransports(['websocket']).build());
     socket.onConnect((_) {
       debugPrint('connect');

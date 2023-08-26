@@ -107,14 +107,14 @@ class _HomeState extends State<Home> {
                         mapType: MapType.normal,
                         initialCameraPosition: CameraPosition(
                           target: LatLng(controller.lat, controller.long),
-                          zoom: 14.4746,
+                          zoom: 20.4746,
                         ),
                         myLocationButtonEnabled: true,
                         markers: controller.markers,
                         polylines: controller.polylines,
                         onMapCreated: (GoogleMapController ctrl) {
-                          if (!controller.t_controller.isCompleted) {
-                            controller.t_controller.complete(ctrl);
+                          if (!controller.tController.isCompleted) {
+                            controller.tController.complete(ctrl);
                           }
                         },
                       );

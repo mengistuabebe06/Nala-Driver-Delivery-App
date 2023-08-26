@@ -96,6 +96,11 @@ class ProfilePage extends StatelessWidget {
                 ),
                 items: [
                   SettingsItem(
+                    onTap: () {},
+                    icons: Icons.notifications,
+                    title: "Notification",
+                  ),
+                  SettingsItem(
                     onTap: () {
                       // Dialog
                       showDialog(
@@ -165,11 +170,8 @@ class ProfilePage extends StatelessWidget {
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           image: const DecorationImage(
-            alignment: Alignment.topCenter,
-            image: CachedNetworkImageProvider(
-              'https://wallpaperaccess.com/full/3787594.jpg',
-            ),
-          )),
+              alignment: Alignment.topCenter,
+              image: AssetImage("assets/images/3787594.png"))),
     );
   }
 
@@ -183,9 +185,8 @@ class ProfilePage extends StatelessWidget {
                 .startsWith("https://api.dicebear.com")
             ? CircleAvatar(
                 radius: 40,
-                backgroundImage: CachedNetworkImageProvider(profileController
-                        .user!.profilePic ??
-                    'https://img.freepik.com/free-icon/user_318-159711.jpg'))
+                backgroundImage: CachedNetworkImageProvider(
+                    profileController.user!.profilePic))
             : const CircleAvatar(
                 radius: 40,
                 backgroundImage: CachedNetworkImageProvider(

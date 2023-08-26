@@ -28,7 +28,7 @@ class SignUpPage extends StatelessWidget {
             body: DecoratedBox(
               decoration: const BoxDecoration(
                 image: DecorationImage(
-                  image: AssetImage('assets/images/LoginBGFlipped.png'),
+                  image: AssetImage('assets/images/LoginBG.png'),
                   fit: BoxFit.cover,
                 ),
               ),

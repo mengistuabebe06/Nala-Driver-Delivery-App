@@ -72,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
                               passwordFocusNode.requestFocus();
                             },
                             decoration: InputDecoration(
-                              hintText: 'Johndoe@gmail.com',
+                              hintText: 'Email',
                               hintStyle: TextStyle(
                                 fontSize: 50.sp,
                                 fontWeight: FontWeight.bold,

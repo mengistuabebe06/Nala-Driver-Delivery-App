@@ -1,5 +1,5 @@
 import 'package:NalaDelivery/src/controller/home_controller.dart';
-import 'package:NalaDelivery/src/routes.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -37,7 +37,7 @@ class DeliveriesBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double _w = MediaQuery.of(context).size.width;
+    double w = MediaQuery.of(context).size.width;
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
@@ -67,8 +67,8 @@ class DeliveriesBottomSheet extends StatelessWidget {
                         "Deliveries",
                         style: TextStyle(
                             fontFamily: "Montserrat",
-                            fontWeight: FontWeight.w500,
-                            fontSize: 62.sp,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 65.sp,
                             color: Theme.of(context).colorScheme.onBackground),
                       ),
                     ),
@@ -86,8 +86,8 @@ class DeliveriesBottomSheet extends StatelessWidget {
               margin: EdgeInsets.symmetric(
                 vertical: 10.h,
               ),
-              height: 1000.h,
-              child: Expanded(child: ListOfCategories(w: _w)),
+              height: 1500.h,
+              child: Expanded(child: ListOfCategories(w: w)),
             ),
           ],
         ),
@@ -161,9 +161,9 @@ class ListOfCategories extends StatelessWidget {
           }
           // If the future is successful, display the booked tickets
           return ListView.builder(
-            padding: EdgeInsets.all(_w / 30),
-            physics:
-                BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            padding: EdgeInsets.all(_w / 35),
+            physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics()),
             itemCount: snapshot.data!.length,
             itemBuilder: (BuildContext context, int index) {
               String timestamp = snapshot.data![index]['time'];
@@ -206,7 +206,9 @@ class Ticket extends StatelessWidget {
         // Get.toNamed(RoutesConstant.booking, arguments: snapshot.data![index]);
       },
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: _w / 30, horizontal: 5),
+        margin: EdgeInsets.symmetric(
+          vertical: _w / 30,
+        ),
         height: _w / 4,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
@@ -240,29 +242,38 @@ class Ticket extends StatelessWidget {
               margin: EdgeInsets.only(left: _w / 20, top: _w / 30),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 190),
                     child: Text(
-                      "OrderId: ${snapshot.data![index]['orderId']}",
+                      "Product: ${snapshot.data![index]['product']}",
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: _w / 28,
+                        fontSize: _w / 29,
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     ),
                   ),
                   Text(
+                    "Delivery To: ${snapshot.data![index]['deliverTo']}",
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: _w / 31,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                  Text(
                     remainingTime,
                     style: TextStyle(
-                      fontSize: _w / 30,
+                      fontSize: _w / 34,
                       fontWeight: FontWeight.bold,
                       color: Colors.grey[300],
                     ),
                   ),
-                  // VIP chip
+                  Chip(text: "${snapshot.data![index]['status']}"),
                 ],
               ),
             ),
@@ -283,16 +294,16 @@ class Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.only(top: 10, right: 4),
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.only(top: 10, right: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.onBackground.withOpacity(0.25),
-        borderRadius: BorderRadius.all(Radius.circular(10)),
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
       ),
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 6,
+          fontSize: 8,
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.onPrimary,
         ),
