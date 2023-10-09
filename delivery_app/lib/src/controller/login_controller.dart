@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:rounded_loading_button/rounded_loading_button.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 
+import '../helper/background_service/background.dart';
 import '../helper/network/network_provider.dart';
 import '../helper/storage/secure_store.dart';
 import '../routes.dart';
@@ -52,12 +54,17 @@ class LoginController extends GetxController {
 
           ProfileController profileController = Get.put(ProfileController());
           profileController.user = y;
+          final isRunning = await FlutterBackgroundService().isRunning();
+          if (!isRunning) {
+            await initializeService();
+          }
+          FlutterBackgroundService().invoke("getDeliveries");
 
           btnController.success();
           Timer(const Duration(milliseconds: 1300), () {
             btnController.reset();
             Timer(const Duration(milliseconds: 300), () {
-              Get.toNamed(RoutesConstant.mainMenu);
+              Get.offAllNamed(RoutesConstant.mainMenu);
             });
           });
           return true;

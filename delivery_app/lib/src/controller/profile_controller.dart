@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' hide FormData, MultipartFile;
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../helper/network/network_provider.dart';
 import '../helper/storage/secure_store.dart';
@@ -11,6 +13,7 @@ import '../routes.dart';
 
 class ProfileController extends GetxController {
   var isLoading = false;
+  bool notifications = false;
   var formKey = GlobalKey<FormState>();
   User? user;
   XFile? profilePic;
@@ -23,6 +26,46 @@ class ProfileController extends GetxController {
   TextEditingController compbio = TextEditingController();
   TextEditingController profbio = TextEditingController();
   TextEditingController phoneNumber = TextEditingController();
+
+  // Toggle notifications
+  void toggleNotifications(bool enabled) async {
+    await SecuredStorage.store(
+        key: SharedKeys.notification, value: enabled.toString());
+    if (enabled) {
+      await requestPermission().then((value) async {
+        if (value) {
+          // Schedule next notification
+          await AwesomeNotifications().createNotification(
+            content: NotificationContent(
+              id: 1,
+              channelKey: 'schedule_reminder',
+              title: 'Notification Enabled',
+              body: 'Successfully enabled notifications',
+            ),
+            schedule: NotificationCalendar(
+              weekday: DateTime.now().weekday,
+              hour: DateTime.now().hour,
+              minute: DateTime.now().minute + 1,
+            ),
+          );
+        } else {
+          await AwesomeNotifications().cancelAllSchedules();
+        }
+      });
+    } else {
+      notifications = false;
+      update();
+    }
+  }
+
+  Future<bool> requestPermission() async {
+    if (await Permission.notification.request().isGranted) {
+      print('Notification Permission Granted');
+      notifications = true;
+      return true;
+    }
+    return false;
+  }
 
   @override
   void onInit() async {
@@ -121,7 +164,7 @@ class ProfileController extends GetxController {
 }
 
 class User {
-  String id;
+  int id;
   String name;
   String email;
   String profilePic;

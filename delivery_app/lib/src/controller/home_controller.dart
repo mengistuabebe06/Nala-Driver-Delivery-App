@@ -3,11 +3,12 @@ import 'dart:convert';
 
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io_client;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../helper/background_service/background.dart';
 import '../helper/storage/secure_store.dart';
 import 'profile_controller.dart';
 
@@ -29,12 +30,129 @@ class HomeController extends GetxController {
     await controller.animateCamera(CameraUpdate.newCameraPosition(position));
   }
 
+  void connectSocket() async {
+    final isRunning = await FlutterBackgroundService().isRunning();
+    if (!isRunning) {
+      await initializeService();
+    }
+    FlutterBackgroundService().invoke("startService", {
+      "data": {"user": user?.id, "lat": lat, "long": long}
+    });
+
+    FlutterBackgroundService().on('positionUpdate').listen((event) {
+      FlutterBackgroundService().invoke(
+        "updatePosition",
+        {
+          "userId": user?.id,
+          "lat": lat,
+          "long": long,
+        },
+      );
+    });
+
+    FlutterBackgroundService().invoke("getDeliveries");
+
+    FlutterBackgroundService().on('NotificationUpdate').listen((event) {
+      if (event != null) {
+        final data = jsonDecode(event['data']);
+        deliveries = data;
+        update();
+      }
+    });
+  }
+
+  void setDelivered(data) async {
+    for (var delivery in deliveries) {
+      if (delivery["orderId"] == data["orderId"]) {
+        delivery["status"] = "Delivered";
+      }
+    }
+
+    markers.clear();
+    polylines.clear();
+
+    await Future.delayed(const Duration(seconds: 3));
+
+    await SecuredStorage.store(
+        key: SharedKeys.deliveries, value: jsonEncode(deliveries));
+
+    FlutterBackgroundService().invoke(
+      "deliveryRequestResponse",
+      {
+        "data": {
+          "delivered": true,
+          "orderId": data['orderId'],
+          "accepted": true,
+          "userId": user?.id,
+          "lat": lat,
+          "long": long,
+        },
+      },
+    );
+  }
+
+  void getSnack(data) async {
+    for (var delivery in deliveries) {
+      if (delivery["orderId"] == data["orderId"]) {
+        delivery["accepted"] = true;
+        delivery["status"] = "Accepted";
+      }
+    }
+
+    await SecuredStorage.store(
+        key: SharedKeys.deliveries, value: jsonEncode(deliveries));
+
+    FlutterBackgroundService().invoke(
+      "deliveryRequestResponse",
+      {
+        "data": {
+          "delivered": false,
+          "orderId": data['orderId'],
+          "accepted": true,
+          "userId": user?.id,
+          "lat": lat,
+          "long": long,
+        },
+      },
+    );
+
+    markers.add(Marker(
+      markerId: const MarkerId('deliveryFrom'),
+      position: LatLng(data['initial_lat'] + 0.0, data['initial_long'] + 0.0),
+      infoWindow: const InfoWindow(title: 'Pickup From Here'),
+    ));
+    markers.add(Marker(
+      markerId: const MarkerId('deliveryTo'),
+      position: LatLng(data['final_lat'] + 0.0, data['final_long'] + 0.0),
+      infoWindow: const InfoWindow(title: 'Deliver To Here'),
+    ));
+
+    polylines.add(
+      Polyline(
+        polylineId: const PolylineId('Delivery Route'),
+        points: [
+          LatLng(lat, long),
+          LatLng(data['initial_lat'] + 0.0, data['initial_long'] + 0.0),
+          LatLng(data['final_lat'] + 0.0, data['final_long'] + 0.0),
+        ],
+        color: Colors.orange,
+      ),
+    );
+
+    update();
+  }
+
   @override
   onInit() async {
+    await SecuredStorage.read(key: SharedKeys.user)
+        .then((value) => user = User.fromJson(jsonDecode(value!)));
+
     await getCurrentLocation().then((value) {
       lat = value.latitude;
       long = value.longitude;
       update();
+
+      connectSocket();
 
       CameraPosition newPosition =
           CameraPosition(target: LatLng(lat, long), zoom: 18.151926040649414);
@@ -52,7 +170,6 @@ class HomeController extends GetxController {
 
       _goToTheLake(newPosition);
     });
-    checkFunction();
 
     AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
       if (!isAllowed) {
@@ -66,95 +183,31 @@ class HomeController extends GetxController {
   }
 
   Future getHistory() async {
-    return Future.delayed(const Duration(seconds: 1), () async {
-      return deliveries;
-    });
-  }
+    // sort deliveries based on time
+    if (await SecuredStorage.check(key: SharedKeys.deliveries)) {
+      final x = await SecuredStorage.read(key: SharedKeys.deliveries);
+      deliveries = jsonDecode(x!);
+    }
 
-  void checkFunction() async {
-    await SecuredStorage.read(key: SharedKeys.user)
-        .then((value) => user = User.fromJson(jsonDecode(value!)));
-    final String url = dotenv.get("Base-Url", fallback: "");
-    io_client.Socket socket = io_client.io(url.substring(0, 25),
-        io_client.OptionBuilder().setTransports(['websocket']).build());
-    socket.onConnect((_) {
-      debugPrint('connect');
-      socket.emit('sendLocation', {
-        "userId": user?.id,
-        "lat": lat,
-        "long": long,
+    if (deliveries.isNotEmpty) {
+      deliveries.sort((a, b) {
+        if (b["created_at"] != null && a["created_at"] != null) {
+          return b['created_at'].compareTo(a['created_at']);
+        }
+        return 2;
       });
-    });
-    socket.on('deliveryRequest', (data) async {
-      deliveries.add(data);
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: 1,
-          channelKey: 'delivery_notifier',
-          title: 'New Delivery Request',
-          body: 'You have a new delivery request from ${data['deliverTo']}',
-        ),
-      );
 
-      // Snackbar for accepting or rejecting delivery
-      Get.snackbar(
-        'Delivery Request',
-        'You have a delivery request',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: const Color.fromARGB(255, 148, 134, 255),
-        duration: const Duration(seconds: 15),
-        mainButton: TextButton(
-          onPressed: () {
-            // remove snackbar
-            Get.back();
-
-            markers.add(Marker(
-              markerId: const MarkerId('deliveryFrom'),
-              position: LatLng(data['initialLat'], data['initialLong']),
-              infoWindow: const InfoWindow(title: 'Pickup From Here'),
-            ));
-            markers.add(Marker(
-              markerId: const MarkerId('deliveryTo'),
-              position: LatLng(data['destLat'], data['destLong']),
-              infoWindow: const InfoWindow(title: 'Deliver To Here'),
-            ));
-
-            polylines.add(Polyline(
-              polylineId: const PolylineId('Delivery Route'),
-              points: [
-                LatLng(lat, long),
-                LatLng(data['initialLat'], data['initialLong']),
-                LatLng(data['destLat'], data['destLong']),
-              ],
-              color: Colors.orange,
-            ));
-
-            update();
-
-            socket.emit('deliveryRequestResponse', {
-              "accepted": true,
-              "userId": user?.id,
-              "lat": lat,
-              "long": long,
-            });
-          },
-          child: const Text(
-            'Accept',
-            style: TextStyle(
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-    });
-    socket.on('update', (_) {
-      socket.emit('sendLocation', {
-        "userId": user?.id,
-        "lat": lat,
-        "long": long,
-      });
-    });
-    socket.onDisconnect((_) => debugPrint('disconnect'));
+      // put the accepted deliveries at the top
+      for (var delivery in deliveries) {
+        if ((delivery as Map).containsKey("accepted")) {
+          if (delivery['accepted']) {
+            deliveries.remove(delivery);
+            deliveries.insert(0, delivery);
+          }
+        }
+      }
+    }
+    return deliveries;
   }
 
   Future<Position> getCurrentLocation() async {
@@ -168,7 +221,15 @@ class HomeController extends GetxController {
 
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
+      if (await Permission.contacts.request().isGranted) {
+        // Either the permission was already granted before or the user just granted it.
+      }
 
+// You can request multiple permissions at once.
+      await [
+        Permission.location,
+      ].request();
+      // print(status[Permission.location]);
       if (permission == LocationPermission.denied) {
         return Future.error('Location permissions are denied');
       }

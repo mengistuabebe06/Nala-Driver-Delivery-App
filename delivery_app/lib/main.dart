@@ -2,8 +2,11 @@
 
 import 'dart:io';
 import 'dart:async';
+import 'package:NalaDelivery/src/helper/background_service/background.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
@@ -12,19 +15,24 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 
+import 'src/controller/notification_controller.dart';
 import 'src/helper/storage/secure_store.dart';
 import 'src/routes.dart';
-import 'src/screens/login.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
 
   if (Platform.isAndroid) {
+    await SecuredStorage.initialize();
     final GoogleMapsFlutterPlatform mapsImplementation =
         GoogleMapsFlutterPlatform.instance;
     if (mapsImplementation is GoogleMapsFlutterAndroid) {
       mapsImplementation.useAndroidViewSurface = false;
     }
+
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+    await initializeService();
+    FlutterBackgroundService().invoke("setAsBackground");
   }
 
   if (Platform.isWindows) {
@@ -65,14 +73,35 @@ Future<void> main() async {
       isLoggedIn ? RoutesConstant.mainMenu : RoutesConstant.login;
 
   await dotenv.load();
+  FlutterNativeSplash.remove();
   runApp(NalaDelivery(initialRoute: initialRoute));
 }
 
-class NalaDelivery extends StatelessWidget {
+class NalaDelivery extends StatefulWidget {
   final String initialRoute;
   const NalaDelivery({super.key, required this.initialRoute});
 
+  @override
+  State<NalaDelivery> createState() => _NalaDeliveryState();
+}
+
+class _NalaDeliveryState extends State<NalaDelivery> {
   // This widget is the root of your application.
+
+  @override
+  void initState() {
+    AwesomeNotifications().setListeners(
+        onActionReceivedMethod: NotificationController.onActionReceivedMethod,
+        onNotificationCreatedMethod:
+            NotificationController.onNotificationCreatedMethod,
+        onNotificationDisplayedMethod:
+            NotificationController.onNotificationDisplayedMethod,
+        onDismissActionReceivedMethod:
+            NotificationController.onDismissActionReceivedMethod);
+
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
@@ -81,7 +110,7 @@ class NalaDelivery extends StatelessWidget {
         splitScreenMode: true,
         builder: (context, child) {
           return GetMaterialApp(
-            initialRoute: initialRoute,
+            initialRoute: widget.initialRoute,
             getPages: Routes.pages,
             title: 'NalaDelivery',
             theme: FlexThemeData.light(
@@ -138,17 +167,17 @@ class NalaDelivery extends StatelessWidget {
   }
 }
 
-class GetStarted extends StatelessWidget {
-  const GetStarted({super.key, required this.title});
+// class GetStarted extends StatelessWidget {
+//   const GetStarted({super.key, required this.title});
 
-  final String title;
+//   final String title;
 
-  @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      body: SafeArea(
-        child: LoginPage(),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return const Scaffold(
+//       body: SafeArea(
+//         child: LoginPage(),
+//       ),
+//     );
+//   }
+// }

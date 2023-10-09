@@ -86,52 +86,60 @@ class ProfilePage extends StatelessWidget {
                 children: [],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: SettingsGroup(
-                settingsGroupTitle: "Account",
-                settingsGroupTitleStyle: TextStyle(
-                  fontSize: 80.sp,
-                  fontWeight: FontWeight.bold,
+            GetBuilder<ProfileController>(builder: (profileController) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: SettingsGroup(
+                  settingsGroupTitle: "Account",
+                  settingsGroupTitleStyle: TextStyle(
+                    fontSize: 80.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  items: [
+                    SettingsItem(
+                      onTap: () {},
+                      trailing: Switch(
+                        value: profileController.notifications,
+                        onChanged: (val) {
+                          profileController.toggleNotifications(val);
+                        },
+                      ),
+                      icons: Icons.notifications,
+                      title: "Notification",
+                    ),
+                    SettingsItem(
+                      onTap: () {
+                        // Dialog
+                        showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Logout'),
+                                content: const Text(
+                                    'Are you sure you want to logout?'),
+                                actions: [
+                                  TextButton(
+                                      onPressed: () {
+                                        profileController.logout();
+                                        Get.back();
+                                      },
+                                      child: const Text('Yes')),
+                                  TextButton(
+                                      onPressed: () {
+                                        Get.back();
+                                      },
+                                      child: const Text('No')),
+                                ],
+                              );
+                            });
+                      },
+                      icons: Icons.exit_to_app_rounded,
+                      title: "Log Out",
+                    ),
+                  ],
                 ),
-                items: [
-                  SettingsItem(
-                    onTap: () {},
-                    icons: Icons.notifications,
-                    title: "Notification",
-                  ),
-                  SettingsItem(
-                    onTap: () {
-                      // Dialog
-                      showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Logout'),
-                              content: const Text(
-                                  'Are you sure you want to logout?'),
-                              actions: [
-                                TextButton(
-                                    onPressed: () {
-                                      profileController.logout();
-                                      Get.back();
-                                    },
-                                    child: const Text('Yes')),
-                                TextButton(
-                                    onPressed: () {
-                                      Get.back();
-                                    },
-                                    child: const Text('No')),
-                              ],
-                            );
-                          });
-                    },
-                    icons: Icons.exit_to_app_rounded,
-                    title: "Log Out",
-                  ),
-                ],
-              ),
-            ),
+              );
+            }),
           ],
         ),
       ),

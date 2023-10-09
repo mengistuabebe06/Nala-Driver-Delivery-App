@@ -1,4 +1,5 @@
 import 'package:NalaDelivery/src/controller/home_controller.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -43,33 +44,25 @@ class DeliveriesBottomSheet extends StatelessWidget {
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Container(
         color: Theme.of(context).colorScheme.background,
-        padding: const EdgeInsets.only(
-          right: 15,
-          left: 15,
-          top: 15,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              margin: EdgeInsets.symmetric(
-                vertical: 10.h,
-              ),
+              margin: const EdgeInsets.symmetric(vertical: 10),
               child: Row(
                 children: [
                   Expanded(
                     child: Container(
-                      margin: EdgeInsets.only(
-                        left: 20.w,
-                      ),
+                      margin: const EdgeInsets.only(left: 20),
                       child: Text(
                         "Deliveries",
                         style: TextStyle(
-                            fontFamily: "Montserrat",
-                            fontWeight: FontWeight.bold,
-                            fontSize: 65.sp,
-                            color: Theme.of(context).colorScheme.onBackground),
+                          fontFamily: "Montserrat",
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18, // Adjust the font size as needed
+                          color: Theme.of(context).colorScheme.onBackground,
+                        ),
                       ),
                     ),
                   ),
@@ -82,12 +75,11 @@ class DeliveriesBottomSheet extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              margin: EdgeInsets.symmetric(
-                vertical: 10.h,
-              ),
-              height: 1500.h,
-              child: Expanded(child: ListOfCategories(w: w)),
+            const SizedBox(height: 10), // Add some spacing
+            SizedBox(
+              height: 500, // Adjust the height as needed
+              child: ListOfCategories(
+                  w: w), // Assuming this widget is correctly implemented
             ),
           ],
         ),
@@ -166,7 +158,7 @@ class ListOfCategories extends StatelessWidget {
                 parent: AlwaysScrollableScrollPhysics()),
             itemCount: snapshot.data!.length,
             itemBuilder: (BuildContext context, int index) {
-              String timestamp = snapshot.data![index]['time'];
+              String timestamp = snapshot.data![index]['created_at'];
 
               // Parse the given timestamp into a DateTime object
               DateTime parsedTime = DateTime.parse(timestamp);
@@ -203,7 +195,8 @@ class Ticket extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Get.toNamed(RoutesConstant.booking, arguments: snapshot.data![index]);
+        // Get.find<HomeController>().getSnack(snapshot.data![index]);
+        showDeliveryDetailsPopup(context, snapshot.data![index]);
       },
       child: Container(
         margin: EdgeInsets.symmetric(
@@ -211,7 +204,11 @@ class Ticket extends StatelessWidget {
         ),
         height: _w / 4,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+          color: snapshot.data![index]['status'] == "Delivered"
+              ? Colors.green[900]!.withOpacity(0.7)
+              : snapshot.data![index]['status'] == "Accepted"
+                  ? Colors.yellow[900]!.withOpacity(0.7)
+                  : Theme.of(context).colorScheme.primary.withOpacity(0.8),
           borderRadius: const BorderRadius.all(Radius.circular(20)),
           boxShadow: [
             BoxShadow(
@@ -226,28 +223,27 @@ class Ticket extends StatelessWidget {
           children: [
             Container(
               width: _w / 4,
+              clipBehavior: Clip.hardEdge,
               decoration: const BoxDecoration(
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   bottomLeft: Radius.circular(20),
                 ),
-                image: DecorationImage(
-                  image: NetworkImage(
-                      "https://cdn.vectorstock.com/i/preview-1x/25/51/delivery-order-flat-style-logo-vector-47762551.jpg"),
-                  fit: BoxFit.cover,
-                ),
               ),
+              child: CachedNetworkImage(
+                  imageUrl:
+                      "https://cdn.vectorstock.com/i/preview-1x/25/51/delivery-order-flat-style-logo-vector-47762551.jpg"),
             ),
             Container(
               margin: EdgeInsets.only(left: _w / 20, top: _w / 30),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 190),
                     child: Text(
-                      "Product: ${snapshot.data![index]['product']}",
+                      "Product: ${snapshot.data![index]['products'][0]['product']['name']}",
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: _w / 29,
@@ -273,7 +269,7 @@ class Ticket extends StatelessWidget {
                       color: Colors.grey[300],
                     ),
                   ),
-                  Chip(text: "${snapshot.data![index]['status']}"),
+                  Chip(text: "${snapshot.data![index]['status']}", size: 8),
                 ],
               ),
             ),
@@ -288,8 +284,10 @@ class Chip extends StatelessWidget {
   const Chip({
     super.key,
     required this.text,
+    required this.size,
   });
   final String text;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
@@ -303,11 +301,230 @@ class Chip extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 8,
+          fontSize: size,
           fontWeight: FontWeight.bold,
           color: Theme.of(context).colorScheme.onPrimary,
         ),
       ),
+    );
+  }
+}
+
+class DeliveryDetailsPopup extends StatelessWidget {
+  final Map<String, dynamic> deliveryData;
+
+  const DeliveryDetailsPopup({Key? key, required this.deliveryData})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      insetPadding: const EdgeInsets.all(18),
+      elevation: 0.0,
+      backgroundColor: Colors.transparent,
+      child: contentBox(context),
+    );
+  }
+
+  Widget contentBox(BuildContext context) {
+    final products = deliveryData['products'] as List<dynamic>;
+
+    return Container(
+      padding: const EdgeInsets.all(20.0),
+      decoration: BoxDecoration(
+        shape: BoxShape.rectangle,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Delivery Details',
+            style: TextStyle(
+              fontSize: 20.0,
+              color: Theme.of(context).colorScheme.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16.0),
+          buildInfoRow('ORDER ID : ', '${deliveryData['orderId']}'),
+          buildInfoRow('USER ID : ', '${deliveryData['userId']}'),
+          buildInfoRow('CREATED AT : ', '${deliveryData['created_at']}'),
+          buildInfoRow('STATUS : ', '${deliveryData['status']}'),
+          buildInfoRow('DELIVER TO : ', '${deliveryData['deliverTo']}'),
+          buildInfoRow('FEE : ', '${deliveryData['fee']}'),
+          const SizedBox(height: 16.0),
+          const Text(
+            'PRODUCTS:',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: products.map<Widget>((product) {
+              return Container(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                margin: const EdgeInsets.only(top: 3, left: 16),
+                child: buildInfoRow(
+                  '    ${product['product']['name']}',
+                  'Price: ${product['product']['price']}',
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 16.0),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              if (deliveryData['accepted'])
+                TextButton(
+                  onPressed: () {
+                    Get.find<HomeController>().setDelivered(deliveryData);
+                    Navigator.pop(context);
+                    Get.back();
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return const SuccessModal();
+                      },
+                    );
+                  },
+                  child: const Text('Mark as Delivered'),
+                )
+              else
+                TextButton(
+                  onPressed: () {
+                    Get.find<HomeController>().getSnack(deliveryData);
+                    Navigator.pop(context);
+                    Get.back();
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AcceptedModal(
+                          deliverTo: deliveryData['deliverTo'],
+                        );
+                      },
+                    );
+                  },
+                  child: const Text('Accept'),
+                ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Flexible(
+            child: Chip(
+              text: value,
+              size: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+void showDeliveryDetailsPopup(
+    BuildContext context, Map<String, dynamic> deliveryData) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return DeliveryDetailsPopup(deliveryData: deliveryData);
+    },
+  );
+}
+
+class SuccessModal extends StatelessWidget {
+  const SuccessModal({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      insetPadding: const EdgeInsets.all(10),
+      content: const Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.check_circle,
+            color: Colors.green,
+            size: 64.0,
+          ),
+          SizedBox(height: 16.0),
+          Text(
+            'Great Successfully Delivered',
+            style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(); // Close the dialog
+          },
+          child: const Text('OK', style: TextStyle(color: Colors.green)),
+        ),
+      ],
+    );
+  }
+}
+
+class AcceptedModal extends StatelessWidget {
+  const AcceptedModal({super.key, required this.deliverTo});
+  final deliverTo;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      insetPadding: const EdgeInsets.all(10),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.location_on,
+            color: Colors.green,
+            size: 64.0,
+          ),
+          const SizedBox(height: 16.0),
+          Text(
+            'Accepted, Delivery to $deliverTo',
+            style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(); // Close the dialog
+          },
+          child: const Text('OK', style: TextStyle(color: Colors.green)),
+        ),
+      ],
     );
   }
 }

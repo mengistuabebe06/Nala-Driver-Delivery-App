@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SharedKeys {
   static const String token = "token";
   static const String user = "user";
   static const String firstTime = "firstTime";
   static const String theme = "theme";
+  static const String deliveries = "deliveries";
   static const String profile = "profile";
   static const String package = "package";
   static const String notification = "notification";
@@ -13,6 +13,7 @@ class SharedKeys {
     token,
     user,
     firstTime,
+    deliveries,
     theme,
     profile,
     package,
@@ -21,51 +22,49 @@ class SharedKeys {
 }
 
 class SecuredStorage {
-  static SharedPreferences? storage;
+  static late FlutterSecureStorage _storage;
+
+  static Future<void> initialize() async {
+    _storage = new FlutterSecureStorage();
+  }
 
   static Future<bool> check({required String key}) async {
-    storage = await SharedPreferences.getInstance();
-    debugPrint('SECURE STORAGE : CHECKING THE KEY CALLED $key');
-    return storage!.containsKey(key);
+    return _storage.containsKey(key: key);
   }
 
   static Future<String?> read({required String key}) async {
-    storage = await SharedPreferences.getInstance();
-    debugPrint('SECURE STORAGE : READING THE KEY CALLED $key');
     try {
-      return storage?.getString(key);
+      return _storage.read(key: key);
     } catch (e) {
-      debugPrint('ERROR WHILE READING PREFRENCE KEYS !! $e');
+      print('Error while reading preference keys: $e');
+      return null;
     }
-    return null;
   }
 
   static Future<void> store(
       {required String key, required String value}) async {
-    storage = await SharedPreferences.getInstance();
-    debugPrint('SECURE STORAGE : STORING TO KEY CALLED $key');
     try {
-      await storage?.setString(key, value);
+      await _storage.write(key: key, value: value);
     } catch (e) {
-      debugPrint('ERROR WHILE STORING PREFRENCE KEYS !! $e');
+      print('Error while storing preference keys: $e');
     }
   }
 
   static Future<void> clear() async {
-    storage = await SharedPreferences.getInstance();
-    debugPrint('CLEARING PREFRENCE KEYS !!');
     for (var key in SharedKeys.list) {
       try {
-        await (storage as SharedPreferences).remove(key);
+        await _storage.delete(key: key);
       } catch (e) {
-        debugPrint('ERROR WHILE CLEARING PREFRENCE KEYS !! $e');
+        print('Error while clearing preference keys: $e');
       }
     }
   }
 
-  static Future<void> delete(key) async {
-    storage = await SharedPreferences.getInstance();
-    debugPrint('CLEARING REFRESH TOKEN !!');
-    await (storage as SharedPreferences).remove(key);
+  static Future<void> delete(String key) async {
+    try {
+      await _storage.delete(key: key);
+    } catch (e) {
+      print('Error while deleting preference key: $e');
+    }
   }
 }

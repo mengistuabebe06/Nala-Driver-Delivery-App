@@ -69,7 +69,7 @@ class SignUpController extends GetxController {
           Timer(const Duration(seconds: 2), () {
             btnController.reset();
             Timer(const Duration(milliseconds: 80), () {
-              Get.toNamed(RoutesConstant.mainMenu);
+              Get.offAllNamed(RoutesConstant.mainMenu);
             });
           });
           return true;

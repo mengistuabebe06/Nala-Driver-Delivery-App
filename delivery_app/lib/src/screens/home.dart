@@ -7,20 +7,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
-class Home extends StatefulWidget {
+class Home extends StatelessWidget {
   Home({super.key});
 
-  @override
-  State<Home> createState() => _HomeState();
-}
-
-class _HomeState extends State<Home> {
   final Completer<GoogleMapController> controller =
       Completer<GoogleMapController>();
-
-  bool liked = false;
-
-  double rating = 3.0;
 
   @override
   Widget build(BuildContext context) {
